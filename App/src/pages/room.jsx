@@ -42,6 +42,16 @@ function Room({ onBack }) {
   const [copied, setCopied] = useState(false);
   const [showChat, setShowChat] = useState(true);
 
+  const pinchStartDist = useRef(null);
+  const pinchStartZoom = useRef(1);
+
+  const pencilWidthRef = useRef(pencilWidth);
+  const pencilColorRef = useRef(pencilColor);
+  const eraserWidthRef = useRef(eraserWidth);
+  const highlighterWidthRef = useRef(highlighterWidth);
+  const highlighterColorRef = useRef(highlighterColor);
+  const toolRef = useRef(tool);
+
   // CanvasReferences
   const canvasRef = useRef(null);
   const localCanvasRef = useRef(null);
@@ -54,6 +64,13 @@ function Room({ onBack }) {
   const lastEmit = useRef(0);
   const previewStroke = useRef([]);
   const fullStroke = useRef([]);
+
+  useEffect(() => { pencilWidthRef.current = pencilWidth; }, [pencilWidth]);
+  useEffect(() => { pencilColorRef.current = pencilColor; }, [pencilColor]);
+  useEffect(() => { eraserWidthRef.current = eraserWidth; }, [eraserWidth]);
+  useEffect(() => { highlighterWidthRef.current = highlighterWidth; }, [highlighterWidth]);
+  useEffect(() => { highlighterColorRef.current = highlighterColor; }, [highlighterColor]);
+  useEffect(() => { toolRef.current = tool; }, [tool]);
 
   //Preview Canvas
   const previewCanvasRef = useRef(null);
@@ -159,51 +176,60 @@ function Room({ onBack }) {
     });
   }, [strokes]);
   
+  const getPosFromTouch = (touch, currentZoom) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const clientX = touch.clientX - rect.left;
+    const clientY = touch.clientY - rect.top;
+    const x = clientX / currentZoom;
+    const y = clientY / currentZoom;
+    return { x, y };
+  };
+
   const getPos = (e) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
     const source = e.touches ? e.touches[0] : e;
-
     const clientX = source.clientX - rect.left;
     const clientY = source.clientY - rect.top;
-
     const x = clientX / zoom;
     const y = clientY / zoom;
-
     return { x, y };
   };
 
   // Handles Drawing
   const startDrawing = (e) => {
-    if (tool !== 'pencil' && tool !== 'highlighter') return;
-      
+    const currentTool = toolRef.current;
+    if (currentTool !== 'pencil' && currentTool !== 'highlighter') return;
+
     const canvas = localCanvasRef.current;
     const ctx = canvas.getContext('2d');
-    const isH = tool === 'highlighter';
-    
-    ctx.strokeStyle = isH ? highlighterColor : pencilColor;
-    ctx.lineWidth   = isH ? highlighterWidth : pencilWidth;
+    const isH = currentTool === 'highlighter';
+
+    ctx.strokeStyle = isH ? highlighterColorRef.current : pencilColorRef.current;
+    ctx.lineWidth   = isH ? highlighterWidthRef.current : pencilWidthRef.current;
     ctx.globalAlpha = isH ? 0.3 : 1;
     ctx.globalCompositeOperation = isH ? 'multiply' : 'source-over';
     ctx.lineCap  = isH ? 'square' : 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
-    
+
     ctxRef.current = ctx;
-    
+
     isDrawing.current = true;
     lastPos.current = getPos(e);
     previewStroke.current = [lastPos.current];
     fullStroke.current = [lastPos.current];
-    draw(e)
+    draw(e);
   };
 
   const draw = (e) => {
     if (!isDrawing.current) return;
-    if (tool !== 'pencil' && tool !== 'highlighter') return;
+    const currentTool = toolRef.current;
+    if (currentTool !== 'pencil' && currentTool !== 'highlighter') return;
     e.preventDefault();
 
-    const isH = tool === 'highlighter';
+    const isH = currentTool === 'highlighter';
     const ctx = ctxRef.current;
     const canvas = localCanvasRef.current;
     const pos = getPos(e);
@@ -225,20 +251,21 @@ function Room({ onBack }) {
       if (now - lastEmit.current >= 100) {
         const stroke = {
           type: 'preview',
-          tool: tool,
-          width: isH ? highlighterWidth : pencilWidth,
-          color: isH ? highlighterColor : pencilColor,
+          tool: currentTool,
+          width: isH ? highlighterWidthRef.current : pencilWidthRef.current,
+          color: isH ? highlighterColorRef.current : pencilColorRef.current,
           points: previewStroke.current
         }
         canvasChange(stroke);
         previewStroke.current = [previewStroke.current.at(-1)];
-        lastEmit.current = now
+        lastEmit.current = now;
       }
     }
   };
 
   const stopDrawing = () => {
-    if (tool !== 'pencil' && tool !== 'highlighter') return;
+    const currentTool = toolRef.current;
+    if (currentTool !== 'pencil' && currentTool !== 'highlighter') return;
     isDrawing.current = false;
     if (fullStroke.current.length < 2) return;
 
@@ -247,29 +274,28 @@ function Room({ onBack }) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const isH = tool === 'highlighter';
+    const isH = currentTool === 'highlighter';
 
     const stroke = {
       type: 'fullStroke',
       id: crypto.randomUUID(),
       clientId: username,
-      tool: tool,
-      width: isH ? highlighterWidth : pencilWidth,
-      color: isH ? highlighterColor : pencilColor,
+      tool: currentTool,
+      width: isH ? highlighterWidthRef.current : pencilWidthRef.current,
+      color: isH ? highlighterColorRef.current : pencilColorRef.current,
       points: fullStroke.current,
       timestamp: Date.now()
     }
-    
+
     canvasChange(stroke);
     canvasChange({ type: 'preview', points: [] });
     fullStroke.current = [];
-    
   };
 
   // Handle Eraser
   
   const startErasing = (e) => {
-    if (tool !== 'eraser') return;
+    if (toolRef.current !== 'eraser') return;
     isErasing.current = true;
     lastPos.current = getPos(e);
 
@@ -277,40 +303,39 @@ function Room({ onBack }) {
     const ctx = canvas.getContext('2d');
 
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = eraserWidth;
+    ctx.lineWidth = eraserWidthRef.current;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
     ctx.beginPath();
 
-    ctxRef.current = ctx
-    
+    ctxRef.current = ctx;
+
     previewStroke.current = [lastPos.current];
-    fullStroke.current = [lastPos.current];    
+    fullStroke.current = [lastPos.current];
     erase(e);
   };
 
   const erase = (e) => {
-    if (!isErasing.current || tool !== 'eraser') return;
+    if (!isErasing.current || toolRef.current !== 'eraser') return;
     const pos = getPos(e);
-    
-    const ctx = ctxRef.current
-    
+
+    const ctx = ctxRef.current;
+
     ctx.moveTo(lastPos.current.x, lastPos.current.y);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-  
+
     previewStroke.current.push(pos);
     fullStroke.current.push(pos);
-    lastPos.current = pos;  
-  
-    // live preview
+    lastPos.current = pos;
+
     if (memberNames.length < 6) {
       const now = Date.now();
       if (now - lastEmit.current >= 100) {
         canvasChange({
           type: 'preview',
           tool: 'eraser',
-          width: eraserWidth,
+          width: eraserWidthRef.current,
           color: '#ffffff',
           points: previewStroke.current
         });
@@ -329,14 +354,14 @@ function Room({ onBack }) {
     const canvas = localCanvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
+
     canvasChange({
       type: 'fullStroke',
       id: crypto.randomUUID(),
       clientId: username,
       tool: 'eraser',
       color: '#ffffff',
-      width: eraserWidth,
+      width: eraserWidthRef.current,
       points: fullStroke.current,
       timestamp: Date.now()
     });
@@ -383,44 +408,57 @@ function Room({ onBack }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-  
+
     const handleTouchStart = (e) => {
       setHovered(null);
-      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
-        e.preventDefault();
-        if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
-        if (tool === 'eraser') startErasing(e);
+      const t = toolRef.current;
+      if (t === 'pencil' || t === 'highlighter' || t === 'eraser') {
+        if (e.touches.length === 1) {
+          e.preventDefault();
+          if (t === 'pencil' || t === 'highlighter') startDrawing(e);
+          if (t === 'eraser') startErasing(e);
+        }
       }
     };
-    
+
     const handleTouchMove = (e) => {
-      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
-        e.preventDefault();
-        if (tool === 'pencil' || tool === 'highlighter') draw(e);
-        if (tool === 'eraser') erase(e);
+      const t = toolRef.current;
+      if (t === 'pencil' || t === 'highlighter' || t === 'eraser') {
+        if (e.touches.length === 1) {
+          e.preventDefault();
+          if (t === 'pencil' || t === 'highlighter') draw(e);
+          if (t === 'eraser') erase(e);
+        }
       }
     };
 
     const handleTouchEnd = () => {
-      if (tool === 'pencil' || tool === 'highlighter') stopDrawing();
-      if (tool === 'eraser') stopErasing();
+      const t = toolRef.current;
+      if (t === 'pencil' || t === 'highlighter') stopDrawing();
+      if (t === 'eraser') stopErasing();
     };
-  
+
     canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
     canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
     canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
-  
+
     return () => {
       canvas.removeEventListener("touchstart", handleTouchStart);
       canvas.removeEventListener("touchmove", handleTouchMove);
-      canvas.removeEventListener("touchend", handleTouchEnd, { passive: false });
+      canvas.removeEventListener("touchend", handleTouchEnd);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom, tool]);
+  }, []);
 
   const handleWheel = (e) => {
     e.preventDefault();
     setZoom((z) => Math.min(3, Math.max(0.1, z + (e.deltaY < 0 ? 0.1 : -0.1))));
+  };
+
+  const getTouchDistance = (touches) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
   };
 
   const handleMouseDown = (e) => {
@@ -437,8 +475,45 @@ function Room({ onBack }) {
     const container = containerRef.current;
     if (!container) return;
     container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+
+    const handlePinchStart = (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        if (isDrawing.current) stopDrawing();
+        if (isErasing.current) stopErasing();
+        pinchStartDist.current = getTouchDistance(e.touches);
+        pinchStartZoom.current = zoom;
+      }
+    };
+
+    const handlePinchMove = (e) => {
+      if (e.touches.length === 2 && pinchStartDist.current !== null) {
+        e.preventDefault();
+        const currentDist = getTouchDistance(e.touches);
+        const scale = currentDist / pinchStartDist.current;
+        const newZoom = Math.min(3, Math.max(0.1, pinchStartZoom.current * scale));
+        setZoom(newZoom);
+      }
+    };
+
+    const handlePinchEnd = (e) => {
+      if (e.touches.length < 2) {
+        pinchStartDist.current = null;
+      }
+    };
+
+    container.addEventListener('touchstart', handlePinchStart, { passive: false });
+    container.addEventListener('touchmove', handlePinchMove, { passive: false });
+    container.addEventListener('touchend', handlePinchEnd, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+      container.removeEventListener('touchstart', handlePinchStart);
+      container.removeEventListener('touchmove', handlePinchMove);
+      container.removeEventListener('touchend', handlePinchEnd);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom]);
 
   // Updates when dragging changes to reflect drag
   useEffect(() => {
@@ -710,7 +785,7 @@ function Room({ onBack }) {
          </button>
       </div>
 
-      <div className="fixed flex flex-row gap-1.5 md:gap-2 bottom-4 md:bottom-auto md:top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg pointer-events-auto">
+      <div className="fixed flex flex-row gap-1.5 md:gap-2 top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg pointer-events-auto">
       
         <div className="relative">
           <button title="Drag" className={tool === 'drag' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
@@ -728,7 +803,7 @@ function Room({ onBack }) {
               }
             }}>✏️</button>
           {hovered === 'pencil' && (
-            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {pencilMenu()}
             </div>
           )}
@@ -745,7 +820,7 @@ function Room({ onBack }) {
               }
             }}>🧽</button>
           {hovered === 'eraser' && (
-            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {eraserMenu()}
             </div>
           )}
@@ -762,7 +837,7 @@ function Room({ onBack }) {
               }
             }}>🖍️</button>
           {hovered === 'highlighter' && (
-            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {highlighterMenu()}
             </div>
           )}
@@ -788,7 +863,7 @@ function Room({ onBack }) {
       {/* Overlay */}
       <div className='absolute inset-0 pointer-events-none' style={{ zIndex: 10 }}>
   
-        <div className='pointer-events-none'>
+        <div className='pointer-events-none mt-14'>
           <button className='pointer-events-auto font-bold text-2xl bg-red-500 hover:bg-red-400 active:bg-red-600 rounded-lg transition-all mx-4 my-2 px-4 w-[90px]'
             onClick={() => { setConfirmPopup(true); }}>Go Back</button>
   
