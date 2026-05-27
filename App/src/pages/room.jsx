@@ -654,12 +654,12 @@ function Room({ onBack }) {
     const user = JSON.parse(sessionStorage.getItem('user'));
     if (user.title) {
       return <div className='confirmPopup' >
-        <p className='text-2xl'>You are the Host, If you exit, a new Host will be choosen.<br />
+        <p className='text-sm md:text-2xl'>You are the Host, If you exit, a new Host will be choosen.<br />
           Are you Sure you want to Exit</p>
         <br />
-        <button className='text-2xl bg-blue-300 px-2 hover:bg-blue-200 transition-all mr-8'
+        <button className='text-sm md:text-2xl bg-blue-300 px-2 hover:bg-blue-200 transition-all mr-4 md:mr-8'
           onClick={() => { setConfirmPopup(false) }}>No</button>
-        <button className='text-2xl bg-red-300 px-2 hover:bg-red-200 transition-all mr-8'
+        <button className='text-sm md:text-2xl bg-red-300 px-2 hover:bg-red-200 transition-all mr-4 md:mr-8'
           onClick={() => {
             const existingUser = JSON.parse(sessionStorage.getItem('user'));
             delete existingUser.title;
@@ -669,11 +669,11 @@ function Room({ onBack }) {
           }}>Yes</button>
       </div>
     }
-    return <div className='confirmPopup'><p>Are you Sure you want to Exit</p>
+    return <div className='confirmPopup'><p className='text-sm md:text-2xl'>Are you Sure you want to Exit</p>
       <br />
-      <button className='text-2xl bg-blue-300 px-2 hover:bg-blue-200 transition-all mr-8'
+      <button className='text-sm md:text-2xl bg-blue-300 px-2 hover:bg-blue-200 transition-all mr-4 md:mr-8'
         onClick={() => { setConfirmPopup(false) }}>No</button>
-      <button className='text-2xl bg-red-300 px-2 hover:bg-red-200 transition-all mr-8'
+      <button className='text-sm md:text-2xl bg-red-300 px-2 hover:bg-red-200 transition-all mr-4 md:mr-8'
         onClick={onBack}>Yes</button>
     </div>
   }
@@ -965,9 +965,9 @@ function Room({ onBack }) {
             <ul className='chatList'>
               {messages.map((msg, index) => {
                 return (
-                  <li key={index} className='flex'>
+                  <li key={index} className='flex' style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                     <span className='font-semibold text-sm mr-2 flex-shrink-0' style={{ color: colors[msg.id - 1] }}>{msg.name}:</span>
-                    <span className='text-sm text-slate-800 break-words'>{msg.text}</span>
+                    <span className='text-sm text-slate-800 break-words min-w-0'>{msg.text}</span>
                   </li>)
               })}
               <div ref={messagesEndRef} />
