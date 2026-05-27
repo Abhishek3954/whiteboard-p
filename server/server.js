@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 app.use(express.json())
 app.use(cors({
-  origin: '*'
+  origin: 'https://whiteboard-private.vercel.app/'
 }))
 const server = createServer(app);
 initSocket(server);
