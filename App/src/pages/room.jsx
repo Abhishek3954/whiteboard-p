@@ -19,19 +19,6 @@ const basicColors = [
 
 const highlighterColors = ["#FFFF00","#FF6EC7","#00FF00","#FF6600","#00FFFF"];
 
-const getTouchDistance = (touches) => {
-  const dx = touches[0].clientX - touches[1].clientX;
-  const dy = touches[0].clientY - touches[1].clientY;
-  return Math.sqrt(dx * dx + dy * dy);
-};
-
-const getTouchMidpoint = (touches) => {
-  return {
-    x: (touches[0].clientX + touches[1].clientX) / 2,
-    y: (touches[0].clientY + touches[1].clientY) / 2
-  };
-};
-
 function Room({ onBack }) {
   const { handleSendMessage, messages, code, handleSocket, colorId, memberNames,
     handleDisconnect, host, setHost, canvasChange, preview, pencilWidth, setPencilWidth,
@@ -51,24 +38,6 @@ function Room({ onBack }) {
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [hovered, setHovered] = useState(null);
-
-  const zoomRef = useRef(zoom);
-  const panRef = useRef(pan);
-  const toolRef = useRef(tool);
-  const draggingRef = useRef(dragging);
-  const dragStartRef = useRef(dragStart);
-  const touchStartDistRef = useRef(null);
-  const touchStartZoomRef = useRef(null);
-  const touchStartPanRef = useRef({ x: 0, y: 0 });
-  const touchStartMidpointRef = useRef({ x: 0, y: 0 });
-  const isPinchingRef = useRef(false);
-  const handlersRef = useRef({});
-
-  zoomRef.current = zoom;
-  panRef.current = pan;
-  toolRef.current = tool;
-  draggingRef.current = dragging;
-  dragStartRef.current = dragStart;
   const hostHeading = host ? 'You are the Host' : '';
   const [copied, setCopied] = useState(false);
   const [showChat, setShowChat] = useState(true);
@@ -375,17 +344,6 @@ function Room({ onBack }) {
     fullStroke.current = [];
   };
 
-  handlersRef.current = {
-    startDrawing,
-    draw,
-    stopDrawing,
-    startErasing,
-    erase,
-    stopErasing,
-    tool,
-    zoom
-  };
-
   useEffect(() => {
     if (tool === 'pencil' && allowPencil === false) {
       if (isDrawing.current === true) {
@@ -405,8 +363,10 @@ function Room({ onBack }) {
       }
       setTool('drag');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowPencil, allowHighlighter, allowEraser, tool]);
   
+  // Set canvas dimensions
   useEffect(() => {
     canvasRef.current.width = 4000;
     canvasRef.current.height = 3000;
@@ -423,116 +383,40 @@ function Room({ onBack }) {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
+  
     const handleTouchStart = (e) => {
       setHovered(null);
-      const current = handlersRef.current;
-      if (e.touches.length === 2) {
-        if (isDrawing.current) current.stopDrawing();
-        if (isErasing.current) current.stopErasing();
-        return;
-      }
-      if (current.tool === 'pencil' || current.tool === 'highlighter' || current.tool === 'eraser') {
+      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
         e.preventDefault();
-        if (current.tool === 'pencil' || current.tool === 'highlighter') current.startDrawing(e);
-        if (current.tool === 'eraser') current.startErasing(e);
+        if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
+        if (tool === 'eraser') startErasing(e);
       }
     };
-
+    
     const handleTouchMove = (e) => {
-      const current = handlersRef.current;
-      if (e.touches.length === 2) return;
-      if (current.tool === 'pencil' || current.tool === 'highlighter' || current.tool === 'eraser') {
+      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
         e.preventDefault();
-        if (current.tool === 'pencil' || current.tool === 'highlighter') current.draw(e);
-        if (current.tool === 'eraser') current.erase(e);
+        if (tool === 'pencil' || tool === 'highlighter') draw(e);
+        if (tool === 'eraser') erase(e);
       }
     };
 
     const handleTouchEnd = () => {
-      const current = handlersRef.current;
-      if (current.tool === 'pencil' || current.tool === 'highlighter') current.stopDrawing();
-      if (current.tool === 'eraser') current.stopErasing();
+      if (tool === 'pencil' || tool === 'highlighter') stopDrawing();
+      if (tool === 'eraser') stopErasing();
     };
-
+  
     canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
     canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
     canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
-
+  
     return () => {
       canvas.removeEventListener("touchstart", handleTouchStart);
       canvas.removeEventListener("touchmove", handleTouchMove);
       canvas.removeEventListener("touchend", handleTouchEnd, { passive: false });
     };
-  }, []);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const handleTouchStart = (e) => {
-      if (e.touches.length === 2) {
-        e.preventDefault();
-        isPinchingRef.current = true;
-        touchStartDistRef.current = getTouchDistance(e.touches);
-        touchStartZoomRef.current = zoomRef.current;
-        touchStartPanRef.current = { ...panRef.current };
-        touchStartMidpointRef.current = getTouchMidpoint(e.touches);
-      }
-    };
-
-    const handleTouchMove = (e) => {
-      if (isPinchingRef.current && e.touches.length === 2) {
-        e.preventDefault();
-        const currentDist = getTouchDistance(e.touches);
-        const currentMidpoint = getTouchMidpoint(e.touches);
-        const rect = container.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-
-        if (touchStartDistRef.current > 0) {
-          const scale = currentDist / touchStartDistRef.current;
-          let newZoom = touchStartZoomRef.current * scale;
-          newZoom = Math.min(3, Math.max(0.1, newZoom));
-
-          const px = (touchStartMidpointRef.current.x - cx - touchStartPanRef.current.x) / touchStartZoomRef.current;
-          const py = (touchStartMidpointRef.current.y - cy - touchStartPanRef.current.y) / touchStartZoomRef.current;
-
-          const newPanX = currentMidpoint.x - cx - px * newZoom;
-          const newPanY = currentMidpoint.y - cy - py * newZoom;
-
-          setZoom(newZoom);
-          setPan({ x: newPanX, y: newPanY });
-        }
-      }
-    };
-
-    const handleTouchEnd = (e) => {
-      if (isPinchingRef.current) {
-        isPinchingRef.current = false;
-        touchStartDistRef.current = null;
-        touchStartZoomRef.current = null;
-        if (e.touches.length === 1 && toolRef.current === 'drag') {
-          setDragging(true);
-          const clientX = e.touches[0].clientX;
-          const clientY = e.touches[0].clientY;
-          setDragStart({ x: clientX - panRef.current.x, y: clientY - panRef.current.y });
-        }
-      }
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-    container.addEventListener('touchcancel', handleTouchEnd);
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-      container.removeEventListener('touchcancel', handleTouchEnd);
-    };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, tool]);
 
   const handleWheel = (e) => {
     e.preventDefault();
@@ -733,8 +617,7 @@ function Room({ onBack }) {
           ref={containerRef}
           className="w-full h-full overflow-hidden relative bg-transparent select-none"
           style={{
-            cursor: tool !== 'drag' ? 'default' : (dragging ? 'grabbing' : 'grab'),
-            touchAction: 'none'
+            cursor: tool !== 'drag' ? 'default' : (dragging ? 'grabbing' : 'grab')
           }}
           onMouseDown={(e) => {
             setHovered(null);
@@ -754,7 +637,6 @@ function Room({ onBack }) {
               transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
               transformOrigin: 'center center',
               transition: dragging ? 'none' : 'transform 0.15s ease-in-out',
-              touchAction: 'none'
             }}
             onMouseDown={(e) => {
               setHovered(null);
@@ -780,21 +662,22 @@ function Room({ onBack }) {
             onDoubleClick={(e) => e.preventDefault()}
           />
         </div>
+        {/* Preview Canvas*/}
         <canvas
           ref={previewCanvasRef}
-          className="absolute left-1/2 top-1/2"
+          className="absolute left-1/2 top-1/2"  // no bg-white, no shadow
           style={{
             width: '4000px',
             height: '3000px',
             transform: `translate(-50%, -50%) translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
             transformOrigin: 'center center',
             transition: dragging ? 'none' : 'transform 0.15s ease-in-out',
-            pointerEvents: 'none',
+            pointerEvents: 'none',  // clicks pass through to the canvas below
             zIndex: 2,
-            touchAction: 'none'
           }}
         />
 
+        {/* Local Drawing Canvas */}
         <canvas
           ref={localCanvasRef}
           className="absolute left-1/2 top-1/2"
@@ -806,19 +689,20 @@ function Room({ onBack }) {
             transition: dragging ? 'none' : 'transform 0.15s ease-in-out',
             pointerEvents: 'none',
             zIndex: 3,
-            touchAction: 'none'
           }}
         />
 
+        {/* Zoom Indicator */}
         <div
-           className="absolute top-14 md:top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none"
+           className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none"
            style={{ zIndex: 30 }}
          >
            {Math.round(zoom * 100)}%
          </div>
        
+         {/* Fit button */}
          <button
-           className="absolute top-14 md:top-2 right-14 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
+           className="absolute top-2 right-14 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
            style={{ zIndex: 30 }}
            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
          >
@@ -826,7 +710,7 @@ function Room({ onBack }) {
          </button>
       </div>
 
-      <div className="fixed flex flex-row gap-1.5 md:gap-2 top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg pointer-events-auto">
+      <div className="fixed flex flex-row gap-1.5 md:gap-2 bottom-4 md:bottom-auto md:top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg pointer-events-auto">
       
         <div className="relative">
           <button title="Drag" className={tool === 'drag' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
@@ -844,7 +728,7 @@ function Room({ onBack }) {
               }
             }}>✏️</button>
           {hovered === 'pencil' && (
-            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {pencilMenu()}
             </div>
           )}
@@ -861,7 +745,7 @@ function Room({ onBack }) {
               }
             }}>🧽</button>
           {hovered === 'eraser' && (
-            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {eraserMenu()}
             </div>
           )}
@@ -878,7 +762,7 @@ function Room({ onBack }) {
               }
             }}>🖍️</button>
           {hovered === 'highlighter' && (
-            <div className="absolute top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
               {highlighterMenu()}
             </div>
           )}
@@ -898,14 +782,18 @@ function Room({ onBack }) {
           <button title="Clear" disabled={!allowClear} className="text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => { handleClear(); setHovered(null); }}>🗑️</button>
         </div>
+      
+      </div>
+  
+      {/* Overlay */}
       <div className='absolute inset-0 pointer-events-none' style={{ zIndex: 10 }}>
-   
-        <div className='absolute top-14 md:top-2 left-2 md:left-4 pointer-events-none flex flex-col gap-1.5 z-30'>
-          <button className='pointer-events-auto font-bold text-lg md:text-xl bg-red-500 hover:bg-red-400 active:bg-red-600 rounded-lg transition-all px-4 py-1.5 w-fit shadow-md text-white'
+  
+        <div className='pointer-events-none'>
+          <button className='pointer-events-auto font-bold text-2xl bg-red-500 hover:bg-red-400 active:bg-red-600 rounded-lg transition-all mx-4 my-2 px-4 w-[90px]'
             onClick={() => { setConfirmPopup(true); }}>Go Back</button>
   
-          <h2 className='text-[16px] font-bold text-black'>{hostHeading}</h2>
-          <h3 className='font-bold text-[16px] text-black flex items-center gap-1'>{loading ? 'Loading...' : `Host ID: ${key}`}
+          <h2 className='text-[16px] font-bold ml-4 mt-3 text-black'>{hostHeading}</h2>
+          <h3 className='font-bold text-[16px] ml-4 mt-2 mb-4 text-black flex items-center gap-1'>{loading ? 'Loading...' : `Host ID: ${key}`}
             <button onClick={handleCopy} className='pointer-events-auto select-auto inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 rounded p-1 ml-1 shadow-sm' title='Copy ID'>📃</button>
             {copied && (
                 <span className='ml-2 text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded border border-green-200/50'>
@@ -914,7 +802,7 @@ function Room({ onBack }) {
               )}
           </h3>
   
-          <div className='flex'>
+          <div className='flex mb-3 ml-2'>
             <p className='text-sm font-semibold bg-white border border-slate-200 shadow-sm rounded px-3 py-1 flex items-center'
               style={{ color: colors[colorId - 1] }}>
               {username ? username : ''}</p>
@@ -924,61 +812,62 @@ function Room({ onBack }) {
             const isCurrentUserHost = JSON.parse(sessionStorage.getItem('user'))?.title === 'host';
             
             return (
-              <div onMouseEnter={() => { if (isCurrentUserHost) setHovered('permissions');}} onMouseLeave={()=>{setHovered(null)}} key={index} className='relative flex w-fit pointer-events-auto'>
-                <p className='text-sm font-semibold bg-white border border-slate-200 shadow-sm rounded px-3 py-1 flex items-center'
-                  style={{ color: colors[object.color - 1] }}>
+              <div onMouseEnter={() => { if (isCurrentUserHost) setHovered('permissions');}} onMouseLeave={()=>{setHovered(null)}} key={index} className='relative flex w-fit pointer-events-auto mb-3 ml-2'>
+              <p className='text-sm font-semibold bg-white border border-slate-200 shadow-sm rounded px-3 py-1 flex items-center'
+                style={{ color: colors[object.color - 1] }}>
                   {object.isHost ? `👑 ${object.name}` : object.name}</p>
                 
+                {/* host menu on hover if user is host */}
                 {hovered === 'permissions' && (
-                  <div className='absolute left-[75px] top-0 ml-2 bg-white border border-slate-200 rounded-md p-2 shadow-xl z-50 flex-col gap-1 flex min-w-[180px]'>
-                    <p className='text-[10px] flex justify-center text-slate-500 uppercase font-bold px-1 border-b border-slate-200 pb-1 mb-1'>
-                      Permissions
-                    </p>
-                    <button onClick={() => updatePermission({
-                      type: 'updatePermission',
-                      targetName: object.name,
-                      permission: 'allowPencil',
-                      value: !object.allowPencil
-                    })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
-                      {object.allowPencil ? '✏️ Disable Pencil ✔️' : '✏️ Enable Pencil ✖️'}
-                    </button>
+                        <div className='absolute left-[75px] top-0 ml-2 bg-white border border-slate-200 rounded-md p-2 shadow-xl z-50 flex-col gap-1 flex min-w-[180px]'>
+                          <p className='text-[10px] flex justify-center text-slate-500 uppercase font-bold px-1 border-b border-slate-200 pb-1 mb-1'>
+                            Permissions
+                          </p>
+                          <button onClick={() => updatePermission({
+                            type: 'updatePermission',
+                            targetName: object.name,
+                            permission: 'allowPencil',
+                            value: !object.allowPencil
+                          })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
+                            {object.allowPencil ? '✏️ Disable Pencil ✔️' : '✏️ Enable Pencil ✖️'}
+                          </button>
 
-                    <button onClick={() => updatePermission({
-                      type: 'updatePermission',
-                      targetName: object.name,
-                      permission: 'allowHighlighter',
-                      value: !object.allowHighlighter
-                    })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
-                      {object.allowHighlighter ? '🖍️ Disable Highlighter ✔️' : '🖍️ Enable Highlighter ✖️'}
-                    </button>
+                          <button onClick={() => updatePermission({
+                            type: 'updatePermission',
+                            targetName: object.name,
+                            permission: 'allowHighlighter',
+                            value: !object.allowHighlighter
+                          })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
+                            {object.allowHighlighter ? '🖍️ Disable Highlighter ✔️' : '🖍️ Enable Highlighter ✖️'}
+                          </button>
+                          
+                          <button onClick={() => updatePermission({
+                            type: 'updatePermission',
+                            targetName: object.name,
+                            permission: 'allowEraser',
+                            value: !object.allowEraser
+                          })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
+                            {object.allowEraser ? '🧽 Disable Eraser ✔️' : '🧽 Enable Eraser ✖️'}
+                          </button>
+
+                          <button onClick={() => updatePermission({
+                            type: 'updatePermission',
+                            targetName: object.name,
+                            permission: 'allowClear',
+                            value: !object.allowClear
+                          })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
+                            {object.allowClear ? '🗑️ Disable Clear ✔️' : '🗑️ Enable Clear ✖️'}
+                          </button>
                     
-                    <button onClick={() => updatePermission({
-                      type: 'updatePermission',
-                      targetName: object.name,
-                      permission: 'allowEraser',
-                      value: !object.allowEraser
-                    })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
-                      {object.allowEraser ? '🧽 Disable Eraser ✔️' : '🧽 Enable Eraser ✖️'}
-                    </button>
-
-                    <button onClick={() => updatePermission({
-                      type: 'updatePermission',
-                      targetName: object.name,
-                      permission: 'allowClear',
-                      value: !object.allowClear
-                    })} className='text-xs text-slate-700 hover:text-white hover:bg-blue-600 px-2 py-1 rounded text-left transition-colors'>
-                      {object.allowClear ? '🗑️ Disable Clear ✔️' : '🗑️ Enable Clear ✖️'}
-                    </button>
-              
-                    <button onClick={() => {
-                      updatePermission({
-                        type: 'kick',
-                        targetName: object.name
-                    })}} className='text-xs text-slate-700 hover:text-white hover:bg-red-600 px-2 py-1 rounded text-left transition-colors'>
-                      🥾 Kick Member 
-                    </button>
-                  </div>
-                )}
+                          <button onClick={() => {
+                            updatePermission({
+                              type: 'kick',
+                              targetName: object.name
+                          })}} className='text-xs text-slate-700 hover:text-white hover:bg-red-600 px-2 py-1 rounded text-left transition-colors'>
+                            🥾 Kick Member 
+                          </button>
+                        </div>
+                      )}
               </div>)
           })}
         </div>
