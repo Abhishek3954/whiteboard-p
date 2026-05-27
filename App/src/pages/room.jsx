@@ -764,7 +764,7 @@ function Room({ onBack }) {
 
         {/* Zoom Indicator */}
         <div
-           className="absolute top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none"
+           className="fixed top-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded pointer-events-none"
            style={{ zIndex: 30 }}
          >
            {Math.round(zoom * 100)}%
@@ -772,7 +772,7 @@ function Room({ onBack }) {
        
          {/* Fit button */}
          <button
-           className="absolute top-2 right-14 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
+           className="fixed top-2 right-14 bg-black/50 text-white text-xs px-2 py-1 rounded hover:bg-black/70"
            style={{ zIndex: 30 }}
            onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
          >
@@ -856,7 +856,7 @@ function Room({ onBack }) {
       </div>
   
       {/* Overlay */}
-      <div className='absolute inset-0 pointer-events-none' style={{ zIndex: 10 }}>
+      <div className='fixed inset-0 pointer-events-none' style={{ zIndex: 10 }}>
   
         <div className='pointer-events-none mt-1 md:mt-14'>
           <button className='pointer-events-auto font-bold text-xs md:text-2xl bg-red-500 hover:bg-red-400 active:bg-red-600 rounded-lg transition-all mx-2 md:mx-4 my-1 md:my-2 px-2 md:px-4'
