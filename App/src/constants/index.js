@@ -1,3 +1,3 @@
-export const baseURL = 'http://localhost:8080';
+export const baseURL = 'https://whiteboard-server-kyth.onrender.com';
 
-export const wsURL = 'ws://localhost:8080';
+export const wsURL = 'wss://whiteboard-server-kyth.onrender.com';
