@@ -50,6 +50,10 @@ UserSchema.pre('save', async function(){
 const User = mongoose.model('User', UserSchema);
 const Code = mongoose.model('Code', CodeSchema);
 
+app.get('/healthcheck', (req, res) => {
+  res.status(200).send('Server is healthy and awake!');
+});
+
 app.post('/signup', async (req, res) => {
   try {
     const { name, password } = req.body;
