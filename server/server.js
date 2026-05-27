@@ -17,7 +17,7 @@ app.use(cors({
 const server = createServer(app);
 initSocket(server);
 
-const mongoURL = process.env.mongoURL;
+const mongoURL = process.env.mongoURL || 'mongodb://localhost:27017/whiteboard';
 
 mongoose.connect(mongoURL)
   .then(() => { console.log('mongodb connected') })
@@ -124,4 +124,4 @@ export const deleteRoom = async (roomCode) => {
   }
 }
 
-server.listen(process.env.PORT || 8080, '0.0.0.0' ,()=>{console.log(`running on port ${process.env.PORT}`)});
+server.listen(process.env.PORT || 8080 , '0.0.0.0' ,()=>{console.log(`running on port ${process.env.PORT || 8080}`)});

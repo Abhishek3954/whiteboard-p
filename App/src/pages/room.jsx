@@ -384,15 +384,19 @@ function Room({ onBack }) {
     if (!canvas) return;
   
     const handleTouchStart = (e) => {
-      e.preventDefault();
-      if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
-      if (tool === 'eraser') startErasing(e);
+      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
+        e.preventDefault();
+        if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
+        if (tool === 'eraser') startErasing(e);
+      }
     };
     
     const handleTouchMove = (e) => {
-      e.preventDefault();
-      if (tool === 'pencil' || tool === 'highlighter') draw(e);
-      if (tool === 'eraser') erase(e);
+      if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
+        e.preventDefault();
+        if (tool === 'pencil' || tool === 'highlighter') draw(e);
+        if (tool === 'eraser') erase(e);
+      }
     };
 
     const handleTouchEnd = () => {
@@ -402,15 +406,14 @@ function Room({ onBack }) {
   
     canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
     canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
-    canvas.addEventListener("touchend", handleTouchEnd, {passive: false});
+    canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
   
     return () => {
       canvas.removeEventListener("touchstart", handleTouchStart);
       canvas.removeEventListener("touchmove", handleTouchMove);
-      canvas.removeEventListener("touchend", handleTouchEnd, {passive: false});
+      canvas.removeEventListener("touchend", handleTouchEnd, { passive: false });
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoom]);
+  }, [zoom, tool]);
 
   const handleWheel = (e) => {
     e.preventDefault();

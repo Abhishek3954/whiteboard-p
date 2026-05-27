@@ -27,6 +27,13 @@ function Views() {
 
   return (
     <>
+      {view === 'selection' && (
+        <div className="fixed top-6 left-0 right-0 flex justify-center items-center pointer-events-none z-50">
+          <h1 className="text-xl md:text-2xl font-extrabold tracking-widest text-white font-mono uppercase">
+            WhiteBoard
+          </h1>
+        </div>
+      )}
       {view === 'selection' && <Selection onSignupClick={() => { setViewAndSave('signup') }} onLoginClick={() => { setViewAndSave('login') }} />}
       {view === 'signup' && <Signup onBack={() => { setViewAndSave('selection') }} onSuccess={()=>{setViewAndSave('selection')}} />}
       {view === 'login' && <Login onBack={() => { setViewAndSave('selection') }} onSuccess={()=>{setViewAndSave('home')}}  />}
