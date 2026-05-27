@@ -1,8 +1,9 @@
 # Whiteboard
 
 This is a collaborative whiteboard application built as a learning project to explore WebSockets and the HTML5 Canvas API. **This is just a learning project, not a real production-ready utility.**
+https://whiteboard-private.vercel.app/
 
-![screenshot](App/public/screenshot-main.png)
+[![screenshot](App/public/screenshot-main.png)](https://whiteboard-private.vercel.app/)
 
 ## Features
 
@@ -65,25 +66,6 @@ npm install
 npm run dev
 ```
 The frontend will typically run on `http://localhost:5173`. Open this URL in your browser to see the application.
-
-## How to Deploy for Yourself
-
-If you wish to host this project yourself, you will need to deploy the frontend and backend separately.
-
-### Deploying the Backend
-1. **Database:** Create a cluster on [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) and get your connection string.
-2. **Hosting:** Use a service like [Render](https://render.com), [Railway](https://railway.app/), or [Heroku](https://heroku.com).
-3. **Environment Variables:** When deploying the server, make sure to add your MongoDB connection string as an environment variable (e.g., `mongoLocalURL` or `mongoAtlasURL` depending on how you configure it).
-
-### Deploying the Frontend
-1. **Build:** First, build the frontend for production by running:
-   ```bash
-   cd App
-   npm run build
-   ```
-2. **Hosting:** Deploy the `/App` directory (or specifically the `dist` folder generated after the build) to static hosting services like [Vercel](https://vercel.com), [Netlify](https://netlify.com), or GitHub Pages.
-3. **API Configuration:** Make sure your frontend API requests and WebSocket connections point to your deployed backend URL instead of `localhost:8080`.
-
 
 ### See a Bug? or want to add a new feature
 feel free to fork the project, update it and start a pull request.
