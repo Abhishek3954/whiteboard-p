@@ -782,8 +782,6 @@ function Room({ onBack }) {
         </div>
       
       </div>
-      
-      </div>
   
       {/* Overlay */}
       <div className='absolute inset-0 pointer-events-none' style={{ zIndex: 10 }}>
