@@ -363,6 +363,7 @@ function Room({ onBack }) {
       }
       setTool('drag');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allowPencil, allowHighlighter, allowEraser, tool]);
   
   // Set canvas dimensions
@@ -414,6 +415,7 @@ function Room({ onBack }) {
       canvas.removeEventListener("touchmove", handleTouchMove);
       canvas.removeEventListener("touchend", handleTouchEnd, { passive: false });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [zoom, tool]);
 
   const handleWheel = (e) => {
