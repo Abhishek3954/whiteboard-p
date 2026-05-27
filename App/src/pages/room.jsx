@@ -384,6 +384,7 @@ function Room({ onBack }) {
     if (!canvas) return;
   
     const handleTouchStart = (e) => {
+      setHovered(null);
       if (tool === 'pencil' || tool === 'highlighter' || tool === 'eraser') {
         e.preventDefault();
         if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
@@ -617,9 +618,11 @@ function Room({ onBack }) {
             cursor: tool !== 'drag' ? 'default' : (dragging ? 'grabbing' : 'grab')
           }}
           onMouseDown={(e) => {
+            setHovered(null);
             if (tool === 'drag') handleMouseDown(e);
           }}
           onTouchStart={(e) => {
+            setHovered(null);
             if (tool === 'drag') handleMouseDown(e);
           }}
         >
@@ -634,6 +637,7 @@ function Room({ onBack }) {
               transition: dragging ? 'none' : 'transform 0.15s ease-in-out',
             }}
             onMouseDown={(e) => {
+              setHovered(null);
               if (tool === 'pencil' || tool === 'highlighter') startDrawing(e);
               else if (tool === 'eraser') startErasing(e);
             }}
@@ -704,46 +708,80 @@ function Room({ onBack }) {
          </button>
       </div>
 
-      {/* Buttons */}
-      <div className='fixed flex flex-row gap-2 top-2 left-[39%]'>
+      <div className="fixed flex flex-row gap-1.5 md:gap-2 bottom-4 md:bottom-auto md:top-2 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md p-1.5 rounded-xl border border-slate-200 shadow-lg pointer-events-auto">
       
-        <div className='relative'>
-          <button title='Drag' className={tool === 'drag' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
-            onClick={() => { toggleTool('drag'); }}>🖱️</button>
+        <div className="relative">
+          <button title="Drag" className={tool === 'drag' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
+            onClick={() => { toggleTool('drag'); setHovered(null); }}>🖱️</button>
         </div>
       
-        <div className='relative' onMouseEnter={()=>{setHovered(allowPencil ? 'pencil' : null)}} onMouseLeave={()=>{setHovered(null)}}>
+        <div className="relative">
           <button disabled={!allowPencil} className={tool === 'pencil' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
-            onClick={() => { toggleTool('pencil'); }}>✏️</button>
-          {hovered === 'pencil' && <div className='absolute top-8 left-0 mt-2'>{pencilMenu()}</div>}
+            onClick={() => {
+              if (tool === 'pencil') {
+                setHovered(hovered === 'pencil' ? null : 'pencil');
+              } else {
+                toggleTool('pencil');
+                setHovered('pencil');
+              }
+            }}>✏️</button>
+          {hovered === 'pencil' && (
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+              {pencilMenu()}
+            </div>
+          )}
         </div>
       
-        <div className='relative' onMouseEnter={()=>{setHovered(allowEraser ? 'eraser' : null)}} onMouseLeave={()=>{setHovered(null)}}>
+        <div className="relative">
           <button disabled={!allowEraser} className={tool === 'eraser' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
-            onClick={()=>{toggleTool('eraser')}}>🧽</button>
-          {hovered === 'eraser' && <div className='absolute top-8 left-0 mt-2'>{eraserMenu()}</div>}
+            onClick={() => {
+              if (tool === 'eraser') {
+                setHovered(hovered === 'eraser' ? null : 'eraser');
+              } else {
+                toggleTool('eraser');
+                setHovered('eraser');
+              }
+            }}>🧽</button>
+          {hovered === 'eraser' && (
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+              {eraserMenu()}
+            </div>
+          )}
         </div>
       
-        <div className='relative' onMouseEnter={()=>{setHovered(allowHighlighter ? 'highlighter' : null)}} onMouseLeave={()=>{setHovered(null)}}>
+        <div className="relative">
           <button disabled={!allowHighlighter} className={tool === 'highlighter' ? 'text-xl h-10 w-10 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-500 pointer-events-auto shadow-sm' : 'text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto transition-all disabled:opacity-50 disabled:cursor-not-allowed'}
-            onClick={()=>{toggleTool('highlighter')}}>🖍️</button>
-          {hovered === 'highlighter' && <div className='absolute top-8 left-0 mt-2'>{highlighterMenu()}</div>}
+            onClick={() => {
+              if (tool === 'highlighter') {
+                setHovered(hovered === 'highlighter' ? null : 'highlighter');
+              } else {
+                toggleTool('highlighter');
+                setHovered('highlighter');
+              }
+            }}>🖍️</button>
+          {hovered === 'highlighter' && (
+            <div className="absolute bottom-12 md:bottom-auto md:top-12 left-1/2 -translate-x-1/2 mt-2 z-50 shadow-xl">
+              {highlighterMenu()}
+            </div>
+          )}
         </div>
       
         <div>
-          <button title='Undo' disabled={undoStack.length === 0} className='text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed'
-            onClick={() => { handleUndo(); }}>⏪</button>
+          <button title="Undo" disabled={undoStack.length === 0} className="text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => { handleUndo(); setHovered(null); }}>⏪</button>
         </div>
       
         <div>
-          <button title='Redo'disabled={redoStack.length === 0} className='text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed'
-            onClick={() => { handleRedo(); }}>⏩</button>
+          <button title="Redo" disabled={redoStack.length === 0} className="text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => { handleRedo(); setHovered(null); }}>⏩</button>
         </div>
-
+ 
         <div>
-          <button title='Clear' disabled={!allowClear} className='text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed'
-            onClick={() => { handleClear(); }}>🗑️</button>
+          <button title="Clear" disabled={!allowClear} className="text-xl h-10 w-10 flex items-center justify-center bg-white rounded-lg border border-slate-200 hover:bg-slate-50 shadow-sm pointer-events-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => { handleClear(); setHovered(null); }}>🗑️</button>
         </div>
+      
+      </div>
       
       </div>
   
@@ -755,10 +793,10 @@ function Room({ onBack }) {
             onClick={() => { setConfirmPopup(true); }}>Go Back</button>
   
           <h2 className='text-[16px] font-bold ml-4 mt-3 text-black'>{hostHeading}</h2>
-          <h3 className='font-bold text-[16px] ml-4 mt-2 mb-4 text-black'>{loading ? 'Loading...' : `Host ID: ${key}`}
-            <button onClick={handleCopy} className='pointer-events-auto select-auto fixed border-2 ml-2' title='Copy ID'>📃</button>
+          <h3 className='font-bold text-[16px] ml-4 mt-2 mb-4 text-black flex items-center gap-1'>{loading ? 'Loading...' : `Host ID: ${key}`}
+            <button onClick={handleCopy} className='pointer-events-auto select-auto inline-flex items-center justify-center border border-slate-200 bg-white hover:bg-slate-50 active:bg-slate-100 rounded p-1 ml-1 shadow-sm' title='Copy ID'>📃</button>
             {copied && (
-                <span className='ml-8 text-xs text-green-600 font-medium'>
+                <span className='ml-2 text-xs text-green-600 font-medium bg-green-50 px-2 py-0.5 rounded border border-green-200/50'>
                   Copied!
                 </span>
               )}
