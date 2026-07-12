@@ -1,0 +1,28 @@
+name: whiteboard
+
+services:
+  frontend:
+    container_name: react-client-prod
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  backend:
+    environment:
+      - NODE_ENV=production
+      - mongoURL=${MONGO_URI}
+    restart: unless-stopped
+
+  database:
+    restart: unless-stopped
+
+
+volumes:
+  my-volume:
+
+networks:
+  my-network:
+    driver: bridge
+      
+        
+      

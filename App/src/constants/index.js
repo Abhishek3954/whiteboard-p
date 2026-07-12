@@ -1,3 +1,3 @@
-export const baseURL = 'https://whiteboard-server-kyth.onrender.com';
+export const baseURL = '/api1';
 
-export const wsURL = 'wss://whiteboard-server-kyth.onrender.com';
+export const wsURL = '/api2';

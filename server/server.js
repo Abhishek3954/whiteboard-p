@@ -12,7 +12,7 @@ dotenv.config();
 const app = express();
 app.use(express.json())
 app.use(cors({
-  origin: 'https://whiteboard-private.vercel.app'
+  origin: '*'
 }))
 const server = createServer(app);
 initSocket(server);
@@ -51,7 +51,7 @@ const User = mongoose.model('User', UserSchema);
 const Code = mongoose.model('Code', CodeSchema);
 
 app.get('/healthcheck', (req, res) => {
-  res.status(200).send('Server is healthy and awake!');
+  res.status(200).send('Server is healthy');
 });
 
 app.post('/signup', async (req, res) => {
