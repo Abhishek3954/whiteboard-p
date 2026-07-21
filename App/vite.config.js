@@ -5,6 +5,21 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    watch: {
+      usePolling: true,
+    },
+    proxy: {
+      '/api1': {
+        target: 'http://api-node:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api1/, '')
+      },
+      '/api2': {
+        target: 'http://api-node:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api2/, '')
+      },
+    },
     host: true,
     allowedHosts: 'aflame-myth-squiggle.ngrok-free.dev'
   }

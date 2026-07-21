@@ -1,0 +1,30 @@
+name: whiteboard
+
+services:
+  frontend:
+    build:
+      target: base
+    command: npm run dev
+    name: react-client-dev
+    volumes:
+      - ./App:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+
+  backend:
+    environment:
+      - NODE_ENV=development
+      - mongoURL=${MONGO_URI}
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: npm run dev
+
+  database:
+    ports:
+      - "27018:27017"
+
+      
+        
+      

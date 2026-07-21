@@ -1,0 +1,16 @@
+version: "3"
+
+env:
+    GITHUB_TOKEN:
+        sh: gh auth token
+
+tasks:
+    act-push:
+        desc: "Runs tests in a container that mimics the github runner locally using act"
+        cmds: 
+          - |
+            act push \
+              -s GITHUB_TOKEN="{{.GITHUB_TOKEN}}" \
+              -e {{.PWD}}/.github/local/event.json \
+              -P ubuntu-24.04=catthehacker/ubuntu:act-22.04 \
+              -W .github/workflows/test.yaml
