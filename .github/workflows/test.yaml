@@ -17,6 +17,8 @@ jobs:
        services: ${{steps.filter.outputs.changes}}
      steps:
          - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+           with:
+             repository: 'Abhishek3954/whiteboard-private'
          - name: Filter path changes
            id: filter
            uses: dorny/paths-filter@b41dfa943b1939b9b646f67753bfe35cf6e4de03 # v4.0.2
