@@ -1,0 +1,47 @@
+name: Run test
+
+on: 
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+   filter:
+     runs-on: ubuntu-24.04
+     outputs:
+       services: ${{steps.filter.outputs.changes}}
+     steps:
+         - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+         - name: Filter path changes
+           id: filter
+           uses: dorny/paths-filter@b41dfa943b1939b9b646f67753bfe35cf6e4de03 # v4.0.2
+           with:
+             filters: |
+                 App:
+                   - 'App/**'
+                 server:
+                   - 'server/**'
+
+
+   test:
+     needs: filter
+     if: ${{needs.filter.outputs.services != '[]' && needs.filter.outputs.services != ''}}
+     runs-on: ubuntu-24.04
+     strategy:
+       matrix:
+         service: ${{fromJson(needs.filter.outputs.services)}}
+       fail-fast: false
+     steps:
+        - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+       
+        - name: Setup Node
+          uses: actions/setup-node@b789df37d6b7526a863bf51b65df64f3f56ffe4f # v7.0.0
+
+        - name: run-tests for ${{matrix.service}}
+          run: |
+              cd ${{matrix.service}}
+              npm ci
+              npm run test
+          

@@ -1,0 +1,11 @@
+version: "3"
+
+includes:
+    test:
+        taskfile: .github/local/Taskfile.yaml
+
+tasks:
+    default:
+        desc: shows list of available tasks on task command
+        cmds:
+            - task --list
