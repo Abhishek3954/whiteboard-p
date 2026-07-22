@@ -10,6 +10,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  actions: write
 
 jobs:
    filter:
@@ -42,6 +43,9 @@ jobs:
        
         - name: Setup Node
           uses: actions/setup-node@b789df37d6b7526a863bf51b65df64f3f56ffe4f # v7.0.0
+          with:
+            cache: 'npm'
+            cache-dependency-path: '${{matrix.service}}/package-lock.json'
 
         - name: run-tests for ${{matrix.service}}
           run: |
