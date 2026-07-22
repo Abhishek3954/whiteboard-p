@@ -9,3 +9,15 @@ tasks:
         desc: shows list of available tasks on task command
         cmds:
             - task --list
+
+    test-react:
+        dir: App
+        desc: run tests for react locally
+        cmds:
+            - npm run test 
+
+    test-node:
+        dir: server
+        desc: run tests for node server locally
+        cmds:
+            - npm run test
