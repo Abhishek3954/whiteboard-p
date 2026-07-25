@@ -22,8 +22,6 @@ jobs:
       environment: ${{steps.set-output.outputs.environment}}
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
-        with:
-          ref: ${{ github.actor == 'nektos/act' && '' || github.ref }}
         if: ${{github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'}}
       - name: Filter to check changes
         id: filter
@@ -62,8 +60,7 @@ jobs:
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
         with:
-          ref: ${{ github.actor == 'nektos/act' && '' || github.ref }} 
-          fetch-depth: ${{ github.actor == 'nektos/act' && 1 || 0 }}
+          fetch-depth: 0
             
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@5b9cf3909b54a280b6df6eee035755eb1f2fd611 # v4.2.0
