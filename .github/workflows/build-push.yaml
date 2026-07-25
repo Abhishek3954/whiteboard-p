@@ -45,7 +45,7 @@ jobs:
             echo "environment=production" >> ${GITHUB_OUTPUT}
             
             else
-            echo "services=${{steps.filter.outputs.changes}}" >> "$GITHUB_OUTPUT"
+            echo "services=[\"${{steps.filter.outputs.changes}}\"]" >> "$GITHUB_OUTPUT"
             echo "environment=staging" >> "$GITHUB_OUTPUT"
             fi
 
@@ -98,8 +98,3 @@ jobs:
          push: ${{ !env.ACT }}
          load: ${{ env.ACT == 'true' }}
          tags: ${{vars.DOCKERHUB_USERNAME}}/${{steps.compute-tag.outputs.image_name}}:${{steps.compute-tag.outputs.version}}
-            
-            
-            
-        
-      
