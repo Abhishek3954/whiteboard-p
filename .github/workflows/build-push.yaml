@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
         with:
           ref: ${{ env.ACT && '' || github.ref }} 
-          fetch-depth: 0
+          fetch-depth: ${{ env.ACT && 1 || 0 }}
             
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@5b9cf3909b54a280b6df6eee035755eb1f2fd611 # v4.2.0
