@@ -26,7 +26,6 @@ tasks:
             -s GITHUB_TOKEN="{{.GITHUB_TOKEN}}" \
             -e {{.PWD}}/.github/local/build-push/push-tag-event.json \
             -P ubuntu-24.04=catthehacker/ubuntu:act-22.04 \
-            --skip-checkout \
             --var DOCKERHUB_USERNAME=user \
             -W .github/workflows/build-push.yaml
                 
