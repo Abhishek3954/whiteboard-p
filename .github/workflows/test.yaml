@@ -24,10 +24,8 @@ jobs:
            uses: dorny/paths-filter@b41dfa943b1939b9b646f67753bfe35cf6e4de03 # v4.0.2
            with:
              filters: |
-                 App:
-                   - 'App/**'
-                 server:
-                   - 'server/**'
+                 App: 'App/**'
+                 server: 'server/**'
 
 
    test:

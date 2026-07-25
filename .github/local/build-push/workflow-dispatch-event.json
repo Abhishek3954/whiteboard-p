@@ -1,0 +1,6 @@
+{
+  "inputs": {
+    "service": "App",
+    "version": "foobarbaz"
+  }
+}
