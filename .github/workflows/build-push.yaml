@@ -1,0 +1,106 @@
+name: Build and Push images to DockerHub
+
+on:
+  push:
+    branches:
+      - main
+    tags: ["*@*"]
+  workflow_dispatch:
+    inputs:
+      service:
+       type: choice
+       required: true
+       options:
+         - App
+         - server
+  
+jobs:
+  filter:
+    runs-on: ubuntu-24.04
+    outputs:
+      services: ${{steps.set-output.outputs.services}}
+      environment: ${{steps.set-output.outputs.environment}}
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        if: ${{github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'}}
+      - name: Filter to check changes
+        id: filter
+        uses: dorny/paths-filter@b41dfa943b1939b9b646f67753bfe35cf6e4de03 # v4.0.2
+        if: ${{github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'}}
+        with:
+          filter: |
+            App: "App/**"
+            server: "server/**"
+      - name: Setup outputs
+        id: set-output
+        run: |
+            if [[ "${{github.event_name}}" == 'workflow_dispatch' ]]; then
+            echo "services=[\"${{inputs.service}}\"]" >> "$GITHUB_OUTPUT"
+            echo "environment=development" >> "$GITHUB_OUTPUT"
+
+            elif [[ "${{github.ref_type}}" == 'tag' ]]; then
+            tag=${GITHUB_REF_NAME}
+            svc=${tag%%@*}
+            echo "services=[\"$svc\"]" >> ${GITHUB_OUTPUT}
+            echo "environment=production" >> ${GITHUB_OUTPUT}
+            
+            else
+            echo "services=${{steps.filter.outputs.changes}}" >> "$GITHUB_OUTPUT"
+            echo "environment=staging" >> "$GITHUB_OUTPUT"
+            fi
+
+  build-push-images:
+    runs-on: ubuntu-24.04
+    if: ${{needs.filter.outputs.services != '[]' && needs.filter.outputs.services != ''}}
+    needs: filter
+    strategy:
+      matrix:
+        service: ${{fromJson(needs.filter.outputs.services)}}
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          ref: ${{ env.ACT && github.sha || github.ref }} 
+          fetch-depth: 0
+            
+      - name: Setup Docker buildx
+        uses: docker/setup-buildx-action@5b9cf3909b54a280b6df6eee035755eb1f2fd611 # v4.2.0
+
+      - name: Login to Dockerhub
+        if: ${{ !env.ACT}}
+        uses: docker/login-action@abd2ef45e78c5afb21d64d4ca52ee8550d9572c7 # v4.5.1
+        with:
+          username: ${{vars.DOCKERHUB_USERNAME}}
+          password: ${{secrets.DOCKERHUB_PASSWORD}}
+
+      - name: Compute Docker Tag
+        id: compute-tag
+        run: |
+
+            raw_svc="${{matrix.service}}"
+            echo "image_name=${raw_svc,,}" >> "$GITHUB_OUTPUT"
+            
+            if [[ "${{github.event_name}}" == 'workflow_dispatch' ]]; then
+              echo "version=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+            elif [[ "${{github.ref_type}}" == 'tag' ]]; then 
+              raw_tag="${GITHUB_REF_NAME}"
+              version="${raw_tag##*@}"
+              echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+            else
+              echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            fi
+
+      - name: build and push container images
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+         context: ${{matrix.service}}
+         push: ${{ !env.ACT }}
+         load: ${{ env.ACT == 'true' }}
+         tags: ${{vars.DOCKERHUB_USERNAME}}/${{steps.compute-tag.outputs.image_name}}:${{steps.compute-tag.outputs.version}}
+            
+            
+            
+        
+      

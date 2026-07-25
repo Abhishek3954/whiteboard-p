@@ -2,7 +2,9 @@ version: "3"
 
 includes:
     test:
-        taskfile: .github/local/Taskfile.yaml
+        taskfile: .github/local/test/Taskfile.yaml
+    build-push:
+        taskfile: .github/local/build-push/Taskfile.yaml
 
 tasks:
     default:
