@@ -22,6 +22,8 @@ jobs:
       environment: ${{steps.set-output.outputs.environment}}
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          ref: ${{ env.ACT && '' || github.ref }}
         if: ${{github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == 'main'}}
       - name: Filter to check changes
         id: filter
@@ -60,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
         with:
-          ref: ${{ env.ACT && github.sha || github.ref }} 
+          ref: ${{ env.ACT && '' || github.ref }} 
           fetch-depth: 0
             
       - name: Setup Docker buildx
