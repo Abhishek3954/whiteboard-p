@@ -53,6 +53,8 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{needs.filter.outputs.services != '[]' && needs.filter.outputs.services != ''}}
     needs: filter
+    outputs:
+      tag-version: ${{ steps.compute-tag.outputs.version }}
     strategy:
       matrix:
         service: ${{fromJson(needs.filter.outputs.services)}}
@@ -111,6 +113,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
               cd app
-              echo "TAG=${{ github.sha }}" > .env
+              echo "TAG=${{ needs.build-push-images.outputs.tag-version }}" > .env
               docker compose pull
               docker compose up -d --remove-orphans
