@@ -98,3 +98,19 @@ jobs:
          push: ${{ !env.ACT }}
          load: ${{ env.ACT == 'true' }}
          tags: ${{vars.DOCKERHUB_USERNAME}}/${{steps.compute-tag.outputs.image_name}}:${{steps.compute-tag.outputs.version}}
+
+  Deploy:
+    needs: build-push-images
+    runs-on: ubuntu-24.04
+    steps:
+      - name: ssh into ec2 to update env files
+        uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
+        with:
+          host: ${secrets.EC2_HOST_IP}
+          username: ec2-user
+          key: ${secrets.EC2_SSH_KEY}
+          script: |
+              cd app
+              echo "TAG=${{ github.sha }}" > .env
+              docker compose pull
+              docker compose up -d --remove-orphans
