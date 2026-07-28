@@ -11,6 +11,12 @@ function initSocket(server) {
     ws.name = null;
     ws.isAlive = true;
     ws.on('pong', () => ws.isAlive = true)
+
+    ws.on('error', (err) => {
+        if (err.code !== 'ECONNRESET') {
+          console.error('WebSocket error:', err);
+        }
+      });
     
     ws.on('message', (message) => {
       const data = JSON.parse(message);
@@ -188,7 +194,8 @@ function initSocket(server) {
       ws.ping();
     });
   }, 20000)
-  
+
+  wss.on('close', () => clearInterval(interval));
 };
 
 export { initSocket };
