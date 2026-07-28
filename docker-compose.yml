@@ -1,0 +1,43 @@
+version: '3.8'
+
+name: Whiteboard
+
+services:
+  Frontend:
+    image: jesterheead/app:sha-212d168
+    container_name: Frontend
+    ports:
+      - 80:80
+    networks:
+      - my-network
+    depends_on:
+      - Backend
+    restart: unless-stopped
+
+  Backend:
+    image: jesterheead/server:sha-2040f9d
+    container_name: Backend
+    environment:
+      - NODE_ENV=production
+      - mongoURL=${MONGO_URI}
+    networks:
+      - my-network
+    depends_on:
+      - Database
+    restart: unless-stopped
+
+  Database:
+    image: mongo:8.3.4-noble
+    container_name: database
+    networks:
+      - my-network
+    volumes:
+      - my-volume:/data/db
+    restart: unless-stopped
+
+networks:
+  my-network:
+    driver: bridge
+
+volumes:
+  my-volume:
