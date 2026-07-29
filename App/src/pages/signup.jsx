@@ -49,7 +49,7 @@ function Signup({ onBack, onSuccess }) {
         <br />
         
         <button className='font-mono transition-all text-3xl border-2 rounded-md border-black bg-green-300 hover:bg-green-500 active:bg-green-600 m-3 px-3 py-1'
-          type='button' onClick={handleSubmit}>Sign Up</button>
+          type='button' onClick={handleSubmit}>Sign Up (test change)</button>
         
       </form>
       <p id='errorP' style={{ color: 'red' }}>{signupError ? signupError:error}</p>
