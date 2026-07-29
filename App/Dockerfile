@@ -17,6 +17,6 @@ RUN npm run build
 ## 3. Production build.
 FROM nginxinc/nginx-unprivileged:1.23-alpine-perl
 
-COPY --link nginx.conf /etc/nginx/conf.d/default.conf
+COPY --link nginx.conf /etc/nginx/nginx.conf
 
 COPY --link --from=builder /app/dist/ /usr/share/nginx/html
