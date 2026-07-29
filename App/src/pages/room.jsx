@@ -85,7 +85,23 @@ function Room({ onBack }) {
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(key);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(key);
+    } else {
+      const textArea = document.createElement("textarea");
+      textArea.value = key;
+      textArea.style.position = "absolute";
+      textArea.style.left = "-999999px";
+      document.body.prepend(textArea);
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (error) {
+        console.error(error);
+      } finally {
+        textArea.remove();
+      }
+    }
     setCopied(true);
 
     setTimeout(() => {
@@ -271,7 +287,7 @@ function Room({ onBack }) {
 
     const stroke = {
       type: 'fullStroke',
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2),
       clientId: username,
       tool: currentTool,
       width: isH ? highlighterWidthRef.current : pencilWidthRef.current,
@@ -350,7 +366,7 @@ function Room({ onBack }) {
 
     canvasChange({
       type: 'fullStroke',
-      id: crypto.randomUUID(),
+      id: Math.random().toString(36).substring(2),
       clientId: username,
       tool: 'eraser',
       color: '#ffffff',
