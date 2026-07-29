@@ -142,17 +142,23 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-              cd app
-              TAGS_JSON='${{ needs.Merge-tags.outputs.tag-versions }}'  
-              
-              sed -i '/^APP_TAG=/d' .env               # Remove previous app_tag and server_tag from the env file
+            cd app
+            TAGS_JSON='${{ needs.Merge-tags.outputs.tag-versions }}'
+            
+            APP_TAG=$(echo "$TAGS_JSON" | jq -r '(.App // .app) // ""')      # Check if TAGS_JSON contains app and/or server
+            SERVER_TAG=$(echo "$TAGS_JSON" | jq -r '.server // ""')          # If not return empty string
+            
+            # Only touch APP_TAG line if there is a new value for it
+            if [ -n "$APP_TAG" ]; then
+              sed -i '/^APP_TAG=/d' .env
+              echo "APP_TAG=$APP_TAG" >> .env
+            fi
+            
+            # Only touch SERVER_TAG line if there is a new value for it
+            if [ -n "$SERVER_TAG" ]; then
               sed -i '/^SERVER_TAG=/d' .env
-
-              APP_TAG=$(echo "$TAGS_JSON" | jq -r '(.App // .app) // ""')      # Check if TAGS_JSON contains app and/or server
-              SERVER_TAG=$(echo "$TAGS_JSON" | jq -r '.server // ""')          # If not return empty string
-              
-              [ -n "$APP_TAG" ] && echo "APP_TAG=$APP_TAG" >> .env             # Checks if APP_TAG or SERVER_TAG is an empty string
-              [ -n "$SERVER_TAG" ] && echo "SERVER_TAG=$SERVER_TAG" >> .env    # Echo if it is non empty and ignore if it is empty
-
-              docker compose pull
-              docker compose up -d --remove-orphans
+              echo "SERVER_TAG=$SERVER_TAG" >> .env
+            fi
+            
+            docker compose pull
+            docker compose up -d --remove-orphans
