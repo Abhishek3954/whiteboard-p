@@ -905,7 +905,7 @@ function Room({ onBack }) {
                 
                 {/* host menu on hover if user is host */}
                 {hovered === 'permissions' && (
-                        <div className='absolute left-[75px] top-0 ml-2 bg-white border border-slate-200 rounded-md p-2 shadow-xl z-50 flex-col gap-1 flex min-w-[180px]'>
+                        <div className='absolute left-full top-0 bg-white border border-slate-200 rounded-md p-2 shadow-xl z-50 flex-col gap-1 flex min-w-[180px]'>
                           <p className='text-[10px] flex justify-center text-slate-500 uppercase font-bold px-1 border-b border-slate-200 pb-1 mb-1'>
                             Permissions
                           </p>
