@@ -53,8 +53,6 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{needs.filter.outputs.services != '[]' && needs.filter.outputs.services != ''}}
     needs: filter
-    outputs:
-      tag-version: ${{ steps.compute-tag.outputs.version }}
     strategy:
       matrix:
         service: ${{fromJson(needs.filter.outputs.services)}}
@@ -101,8 +99,40 @@ jobs:
          load: ${{ env.ACT == 'true' }}
          tags: ${{vars.DOCKERHUB_USERNAME}}/${{steps.compute-tag.outputs.image_name}}:${{steps.compute-tag.outputs.version}}
 
-  Deploy:
+      - name: Write tags to a file
+        run: |
+          mkdir -p tag-output
+          jq -n --arg svc "${{matrix.service}}" --arg ver "${{steps.compute-tag.outputs.version}}" \
+          '{($svc): $ver}' > tag-output/${{matrix.service}}.json
+
+      - name: upload tags as artifects
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: tag-${{matrix.service}}
+          path: tag-output/${{matrix.service}}.json
+          retention-days: 1
+
+  Merge-tags:
     needs: build-push-images
+    runs-on: ubuntu-24.04
+    outputs:
+     tag-versions: ${{ steps.merge.outputs.tags }}
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: tag-*
+          path: tag-output
+          merge-multiple: true
+
+      - name: Merge into single JSON object
+        id: merge
+        run: |
+          merged=$(jq -s 'add' tag-output/*.json)
+          echo "tags=$(echo "$merged" | jq -c .)" >> "$GITHUB_OUTPUT"
+
+  Deploy:
+    needs: Merge-tags
     runs-on: ubuntu-24.04
     steps:
       - name: ssh into ec2 to update env files
@@ -113,6 +143,16 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
               cd app
-              echo "TAG=${{ needs.build-push-images.outputs.tag-version }}" > .env
+              TAGS_JSON='${{ needs.Merge-tags.outputs.tag-versions }}'  
+              
+              sed -i '/^APP_TAG=/d' .env               # Remove previous app_tag and server_tag from the env file
+              sed -i '/^SERVER_TAG=/d' .env
+
+              APP_TAG=$(echo "$TAGS_JSON" | jq -r '(.App // .app) // ""')      # Check if TAGS_JSON contains app and/or server
+              SERVER_TAG=$(echo "$TAGS_JSON" | jq -r '.server // ""')          # If not return empty string
+              
+              [ -n "$APP_TAG" ] && echo "APP_TAG=$APP_TAG" >> .env             # Checks if APP_TAG or SERVER_TAG is an empty string
+              [ -n "$SERVER_TAG" ] && echo "SERVER_TAG=$SERVER_TAG" >> .env    # Echo if it is non empty and ignore if it is empty
+
               docker compose pull
               docker compose up -d --remove-orphans

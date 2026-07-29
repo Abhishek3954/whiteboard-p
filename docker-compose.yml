@@ -4,7 +4,7 @@ name: Whiteboard
 
 services:
   Frontend:
-    image: jesterheead/app:${TAG}
+    image: jesterheead/app:${APP_TAG}
     container_name: Frontend
     ports:
       - 80:80
@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   Backend:
-    image: jesterheead/server:${TAG}
+    image: jesterheead/server:${SERVER_TAG}
     container_name: Backend
     environment:
       - NODE_ENV=production
