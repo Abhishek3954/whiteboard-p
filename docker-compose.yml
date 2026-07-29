@@ -16,7 +16,7 @@ services:
 
   Backend:
     image: jesterheead/server:${SERVER_TAG}
-    container_name: Backend
+    container_name: api-node
     environment:
       - NODE_ENV=production
       - mongoURL=${MONGO_URI}
@@ -28,7 +28,7 @@ services:
 
   Database:
     image: mongo:8.3.4-noble
-    container_name: database
+    container_name: mongodb
     networks:
       - my-network
     volumes:
