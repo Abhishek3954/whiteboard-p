@@ -23,3 +23,23 @@ tasks:
         desc: run tests for node server locally
         cmds:
             - npm run test
+
+    dev-compose:
+        desc: Runs docker compose development
+        cmds:
+            - docker compose -f docker-compose-base.yml -f docker-compose-dev.yml up -d
+
+    prod-compose:
+        desc: Runs docker compose production
+        cmds:
+            - docker compose -f docker-compose-base.yml -f docker-compose-prod.yml up -d
+
+    dev-compose-down:
+        desc: Stops the running development compose project
+        cmds:
+            - docker compose -f docker-compose-base.yml -f docker-compose-dev.yml down
+
+    prod-compose-down:
+        desc: Stops the running production compose project
+        cmds:
+            - docker compose -f docker-compose-base.yml -f docker-compose-prod.yml down
