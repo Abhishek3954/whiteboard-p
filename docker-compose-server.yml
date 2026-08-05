@@ -1,0 +1,10 @@
+name: server
+
+Backend:
+    image: jesterheead/server:${SERVER_TAG}
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - mongoURL=${MONGO_URI}
+    restart: unless-stopped
