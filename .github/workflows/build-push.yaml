@@ -145,7 +145,7 @@ jobs:
     steps:        
       # SSH into app instance to update env
       - name: ssh into ec2 to update env
-        if: matrix.target == "App"
+        if: matrix.target == 'App'
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.EC2_HOST_IP }}
@@ -183,7 +183,7 @@ jobs:
 
       # Execute commands to update env on a private instance using AWS SSM
       - name: Execute Remote Shell via AWS SSM (Server)
-        if: matrix.target == "server"
+        if: matrix.target == 'server'
         run: |
           # Multiline shell script to execute on the remote EC2 instance
             COMMANDS=$(cat << 'EOF'
