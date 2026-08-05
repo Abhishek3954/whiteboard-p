@@ -146,6 +146,9 @@ jobs:
       # SSH into app instance to update env
       - name: ssh into ec2 to update env
         if: matrix.target == 'App'
+        env:
+          DOCKER_USER: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKERHUB_PASSWORD }}
         uses: appleboy/ssh-action@0ff4204d59e8e51228ff73bce53f80d53301dee2 # v1.2.5
         with:
           host: ${{ secrets.EC2_HOST_IP }}
@@ -170,7 +173,7 @@ jobs:
               echo "SERVER_TAG=$SERVER_TAG" >> .env
             fi
 
-            echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
             docker compose -f docker-compose-app.yml pull
             docker compose -f docker-compose-app.yml up -d --remove-orphans
 
