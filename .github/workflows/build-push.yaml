@@ -185,38 +185,37 @@ jobs:
       - name: Execute Remote Shell via AWS SSM (Server)
         if: matrix.target == 'server'
         run: |
-          # Multiline shell script to execute on the remote EC2 instance
-            COMMANDS=$(cat << 'EOF'
-            cd app
-            TAGS_JSON='${{ needs.Merge-tags.outputs.tag-versions }}'
-                    
-            APP_TAG=$(echo "$TAGS_JSON" | jq -r '(.App // .app) // ""')
-            SERVER_TAG=$(echo "$TAGS_JSON" | jq -r '.server // ""')
-                    
-            if [ -n "$APP_TAG" ]; then
-              sed -i '/^APP_TAG=/d' .env
-              echo "APP_TAG=$APP_TAG" >> .env
-            fi
-                    
-            if [ -n "$SERVER_TAG" ]; then
-              sed -i '/^SERVER_TAG=/d' .env
-              echo "SERVER_TAG=$SERVER_TAG" >> .env
-            fi
-                    
-            docker compose -f docker-compose-server.yml pull
-            docker compose -f docker-compose-server.yml up -d --remove-orphans
-            EOF
-            )
-          
-            # Format commands into JSON array for SSM
-            COMMAND_JSON_ARRAY=$(echo "$COMMANDS" | jq -R -s -c 'split("\n")[:-1]')
-          
-            # Execute SSM send-command
-            aws ssm send-command \
-              --instance-ids "${{ secrets.EC2_INSTANCE_ID_SERVER }}" \
-              --document-name "AWS-RunShellScript" \
-              --comment "Deploying updated container tags" \
-              --parameters "commands=$COMMAND_JSON_ARRAY" \
-              --query "Command.CommandId" \
-              --output text
+                COMMANDS=$(cat << 'EOF'
+                cd app
+                TAGS_JSON='${{ needs.Merge-tags.outputs.tag-versions }}'
+      
+                APP_TAG=$(echo "$TAGS_JSON" | jq -r '(.App // .app) // ""')
+                SERVER_TAG=$(echo "$TAGS_JSON" | jq -r '.server // ""')
+      
+                if [ -n "$APP_TAG" ]; then
+                  sed -i '/^APP_TAG=/d' .env
+                  echo "APP_TAG=$APP_TAG" >> .env
+                fi
+      
+                if [ -n "$SERVER_TAG" ]; then
+                  sed -i '/^SERVER_TAG=/d' .env
+                  echo "SERVER_TAG=$SERVER_TAG" >> .env
+                fi
+      
+                docker compose -f docker-compose-server.yml pull
+                docker compose -f docker-compose-server.yml up -d --remove-orphans
+                EOF
+                )
+      
+                # Format commands into JSON array for SSM
+                COMMAND_JSON_ARRAY=$(echo "$COMMANDS" | jq -R -s -c 'split("\n")[:-1]')
+      
+                # Execute SSM send-command
+                aws ssm send-command \
+                  --instance-ids "${{ secrets.EC2_INSTANCE_ID_SERVER }}" \
+                  --document-name "AWS-RunShellScript" \
+                  --comment "Deploying updated container tags" \
+                  --parameters "commands=$COMMAND_JSON_ARRAY" \
+                  --query "Command.CommandId" \
+                  --output text
         
