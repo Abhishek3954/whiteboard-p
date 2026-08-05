@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        target: ${{ needs.filter.outputs.services }}
+        target: ${{ fromJson(needs.filter.outputs.services) }}
       fail-fast: false
     steps:        
       # SSH into app instance to update env
