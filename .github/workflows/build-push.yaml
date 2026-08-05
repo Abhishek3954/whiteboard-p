@@ -142,7 +142,7 @@ jobs:
       matrix:
         target: ${{ fromJson(needs.filter.outputs.services) }}
       fail-fast: false
-    steps:        
+    steps:
       # SSH into app instance to update env
       - name: ssh into ec2 to update env
         if: matrix.target == 'App'
@@ -169,7 +169,8 @@ jobs:
               sed -i '/^SERVER_TAG=/d' .env
               echo "SERVER_TAG=$SERVER_TAG" >> .env
             fi
-            
+
+            echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ vars.DOCKERHUB_USERNAME }}" --password-stdin
             docker compose -f docker-compose-app.yml pull
             docker compose -f docker-compose-app.yml up -d --remove-orphans
 
