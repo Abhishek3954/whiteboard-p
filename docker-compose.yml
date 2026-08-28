@@ -25,12 +25,6 @@ services:
     restart: unless-stopped
 
   Database:
-    image: mongo:8.3.4-noble
-    container_name: mongodb
-    networks:
-      - my-network
-    volumes:
-      - my-volume:/data/db
     restart: unless-stopped
 
 networks:
