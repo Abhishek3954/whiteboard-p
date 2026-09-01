@@ -1,9 +1,8 @@
 # Whiteboard
 
 This is a collaborative whiteboard application built as a learning project to explore WebSockets and the HTML5 Canvas API. **This is just a learning project, not a real production-ready utility.**
-https://whiteboard-private.vercel.app/
 
-[![screenshot](App/public/screenshot-main.png)](https://whiteboard-private.vercel.app/)
+[![screenshot](App/public/screenshot-main.png)]
 
 ## Features
 
