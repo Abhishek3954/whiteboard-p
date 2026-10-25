@@ -1,0 +1,54 @@
+name: ci
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write      # lets the job request the AWS identity
+  contents: read
+
+env:
+  AWS_REGION: ap-south-1
+  IMAGE_NAME: myapp-backend
+  KUSTOMIZE_IMAGE: backend        # the image name used in overlays/aws/kustomization.yaml
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::793168138853:role/github-actions-ecr
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          TAG=${GITHUB_SHA::7}
+          IMAGE=${{ steps.ecr.outputs.registry }}/${IMAGE_NAME}:${TAG}
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Check out the gitops repo
+        uses: actions/checkout@v4
+        with:
+          repository: Abhishek3954/wb-gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
+          path: gitops
+
+      - name: Bump the image tag
+        run: |
+          command -v kustomize >/dev/null || curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && sudo mv kustomize /usr/local/bin/ 2>/dev/null || true
+          cd gitops/overlays/aws
+          kustomize edit set image "${KUSTOMIZE_IMAGE}=${IMAGE}"
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git commit -am "${KUSTOMIZE_IMAGE} -> ${TAG}" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main
