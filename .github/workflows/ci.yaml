@@ -18,10 +18,10 @@ jobs:
       matrix:
         include:
           - service: backend           # the placeholder in the Deployment and in overlays/aws
-            repo: myapp-backend        # the ECR repository
-            context: ./server         # the folder with the Dockerfile
+            repo: whiteboard/server        # the ECR repository
+            context: ./server      # the folder with the Dockerfile
           - service: web
-            repo: myapp-web
+            repo: whiteboard/app
             context: ./App
     steps:
       - uses: actions/checkout@v4
