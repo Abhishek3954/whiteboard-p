@@ -4,17 +4,25 @@ on:
     branches: [main]
 
 permissions:
-  id-token: write      # lets the job request the AWS identity
+  id-token: write
   contents: read
 
 env:
   AWS_REGION: ap-south-1
-  IMAGE_NAME: myapp-backend
-  KUSTOMIZE_IMAGE: backend        # the image name used in overlays/aws/kustomization.yaml
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend           # the placeholder in the Deployment and in overlays/aws
+            repo: myapp-backend        # the ECR repository
+            context: ./server         # the folder with the Dockerfile
+          - service: web
+            repo: myapp-web
+            context: ./App
     steps:
       - uses: actions/checkout@v4
 
@@ -29,26 +37,33 @@ jobs:
       - name: Build and push
         run: |
           TAG=${GITHUB_SHA::7}
-          IMAGE=${{ steps.ecr.outputs.registry }}/${IMAGE_NAME}:${TAG}
-          docker build -t "$IMAGE" .
+          IMAGE=${{ steps.ecr.outputs.registry }}/${{ matrix.repo }}:${TAG}
+          docker build -t "$IMAGE" "${{ matrix.context }}"
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
           echo "TAG=$TAG" >> "$GITHUB_ENV"
 
-      - name: Check out the gitops repo
+      - name: Check out the manifests repo
         uses: actions/checkout@v4
         with:
           repository: Abhishek3954/wb-gitops
           token: ${{ secrets.GITOPS_TOKEN }}
           path: gitops
 
-      - name: Bump the image tag
+      - name: Bump the tag
         run: |
-          command -v kustomize >/dev/null || curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && sudo mv kustomize /usr/local/bin/ 2>/dev/null || true
+          command -v kustomize >/dev/null || { curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && sudo mv kustomize /usr/local/bin/; }
           cd gitops/overlays/aws
-          kustomize edit set image "${KUSTOMIZE_IMAGE}=${IMAGE}"
           git config user.name "ci-bot"
           git config user.email "ci-bot@users.noreply.github.com"
-          git commit -am "${KUSTOMIZE_IMAGE} -> ${TAG}" || exit 0
-          git pull --rebase origin main
-          git push origin HEAD:main
+          for i in 1 2 3 4 5; do
+            git fetch origin main
+            git reset --hard origin/main
+            kustomize edit set image "${{ matrix.service }}=${IMAGE}"
+            if git diff --quiet; then echo "nothing to commit"; exit 0; fi
+            git commit -am "${{ matrix.service }} -> ${TAG}"
+            git push origin HEAD:main && exit 0
+            sleep $((RANDOM % 5 + 2))
+          done
+          echo "could not push after 5 attempts" >&2
+          exit 1
