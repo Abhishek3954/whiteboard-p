@@ -25,16 +25,32 @@ jobs:
             context: ./App
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            src: ${{ matrix.context }}/**
+
+      - name: Skip if no changes
+        if: steps.changes.outputs.src != 'true'
+        run: echo "No changes detected in ${{ matrix.context }}. Skipping build and deployment."
 
       - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.changes.outputs.src == 'true'
         with:
           role-to-assume: arn:aws:iam::793168138853:role/github-actions-ecr
           aws-region: ${{ env.AWS_REGION }}
 
       - id: ecr
+        if: steps.changes.outputs.src == 'true'
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build and push
+        if: steps.changes.outputs.src == 'true'
         run: |
           TAG=${GITHUB_SHA::7}
           IMAGE=${{ steps.ecr.outputs.registry }}/${{ matrix.repo }}:${TAG}
@@ -44,6 +60,7 @@ jobs:
           echo "TAG=$TAG" >> "$GITHUB_ENV"
 
       - name: Check out the manifests repo
+        if: steps.changes.outputs.src == 'true'
         uses: actions/checkout@v4
         with:
           repository: Abhishek3954/wb-gitops
@@ -51,6 +68,7 @@ jobs:
           path: gitops
 
       - name: Bump the tag
+        if: steps.changes.outputs.src == 'true'
         run: |
           command -v kustomize >/dev/null || { curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash && sudo mv kustomize /usr/local/bin/; }
           cd gitops/overlays/aws
