@@ -1,8 +1,0 @@
-name: App
-
-services:
-  Frontend:
-    image: jesterheead/app:${APP_TAG}
-    ports:
-      - "80:80"
-    restart: unless-stopped
