@@ -1,30 +1,47 @@
-name: Whiteboard
+name: whiteboard
 
 services:
-  Frontend:
-    image: jesterheead/app:${APP_TAG}
-    container_name: Frontend
+  frontend:
+    build:
+      context: ./App
+      dockerfile: Dockerfile
+    container_name: react-client
     ports:
-      - 80:80
+      - "80:80"
     networks:
       - my-network
     depends_on:
-      - Backend
+      - backend
     restart: unless-stopped
 
-  Backend:
-    image: jesterheead/server:${SERVER_TAG}
-    container_name: api-node
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
     environment:
       - NODE_ENV=production
-      - mongoURL=${MONGO_URI}
+      - mongoURL=${MONGO_URI:-mongodb://mongodb:27017/whiteboard}
     networks:
-      - my-network
+      my-network:
+        aliases:
+          - api-node
+          - backend
     depends_on:
-      - Database
+      - database
     restart: unless-stopped
 
-  Database:
+  database:
+    image: mongo:8.3.4-noble
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - my-volume:/data/db
+    networks:
+      my-network:
+        aliases:
+          - mongodb
+          - database
     restart: unless-stopped
 
 networks:

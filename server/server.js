@@ -5,7 +5,8 @@ import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import {initSocket} from './websocket.js'
-import generateKey from './hostkey.js'
+import generateKey from './hostkey.js';
+import { Room } from './roomModel.js';
 
 dotenv.config();
 
@@ -121,7 +122,8 @@ app.get('/checkCode/:code', async (req, res) => {
 
 export const deleteRoom = async (roomCode) => {
   try {
-    await Code.findOneAndDelete({ code: roomCode });  
+    await Code.findOneAndDelete({ code: roomCode });
+    await Room.findOneAndDelete({ code: roomCode });  
   }
   catch (err) {
     console.log(err.message);

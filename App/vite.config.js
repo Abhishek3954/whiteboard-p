@@ -17,6 +17,7 @@ export default defineConfig({
       '/api2': {
         target: 'http://api-node:8080',
         changeOrigin: true,
+        ws: true,
         rewrite: (path) => path.replace(/^\/api2/, '')
       },
     },
