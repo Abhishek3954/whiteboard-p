@@ -51,10 +51,6 @@ UserSchema.pre('save', async function(){
 const User = mongoose.model('User', UserSchema);
 const Code = mongoose.model('Code', CodeSchema);
 
-app.get('/healthcheck', (req, res) => {
-  res.status(200).send('Server is healthy');
-});
-
 app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
