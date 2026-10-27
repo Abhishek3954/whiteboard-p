@@ -54,6 +54,10 @@ app.get('/healthcheck', (req, res) => {
   res.status(200).send('Server is healthy');
 });
 
+app.get('/healthz', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.post('/signup', async (req, res) => {
   try {
     const { name, password } = req.body;
