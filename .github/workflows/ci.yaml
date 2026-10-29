@@ -50,6 +50,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
       - name: Build
+        if: steps.changes.outputs.src == 'true'
         run: |
           TAG=${GITHUB_SHA::7}
           IMAGE=${{ steps.ecr.outputs.registry }}/${{ matrix.repo }}:${TAG}
@@ -58,6 +59,7 @@ jobs:
           echo "TAG=$TAG" >> "$GITHUB_ENV"
 
       - name: Scan the image
+        if: steps.changes.outputs.src == 'true'
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1   # v0.35.0
         with:
           image-ref: ${{ env.IMAGE }}
@@ -68,6 +70,7 @@ jobs:
           format: table
 
       - name: Push
+        if: steps.changes.outputs.src == 'true'
         run: docker push "$IMAGE"
 
       - name: Check out the manifests repo
