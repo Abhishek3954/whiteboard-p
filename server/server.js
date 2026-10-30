@@ -1,4 +1,3 @@
-// test
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import mongoose from 'mongoose';
@@ -16,6 +15,41 @@ app.use(express.json())
 app.use(cors({
   origin: '*'
 }))
+
+const createRateLimiter = (windowMs, max) => {
+  const requests = new Map();
+  const cleanup = setInterval(() => {
+    const now = Date.now();
+    for (const [ip, window] of requests) {
+      if (now >= window.resetAt) requests.delete(ip);
+    }
+  }, windowMs).unref();
+
+  return (req, res, next) => {
+    const now = Date.now();
+    const ip = req.ip;
+    let window = requests.get(ip);
+
+    if (!window || now >= window.resetAt) {
+      window = { count: 0, resetAt: now + windowMs };
+      requests.set(ip, window);
+    }
+
+    window.count += 1;
+    if (window.count > max) {
+      res.set('Retry-After', String(Math.ceil((window.resetAt - now) / 1000)));
+      return res.status(429).json({ message: 'Too many requests. Please try again later.' });
+    }
+
+    next();
+  };
+};
+
+const loginLimiter = createRateLimiter(15 * 60 * 1000, 10);
+const signupLimiter = createRateLimiter(60 * 60 * 1000, 5);
+const hostCodeLimiter = createRateLimiter(15 * 60 * 1000, 10);
+const checkCodeLimiter = createRateLimiter(15 * 60 * 1000, 30);
+
 const server = createServer(app);
 initSocket(server);
 
@@ -56,10 +90,15 @@ app.get('/healthz', (req, res) => {
   res.status(200).send('OK');
 });
 
-app.post('/signup', async (req, res) => {
+app.post('/signup', signupLimiter, async (req, res) => {
   try {
-    const { name, password } = req.body;
-    const existingUser = await User.findOne({ name: name })
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const password = req.body?.password;
+    if (!name || name.length > 100 || typeof password !== 'string' || !password) {
+      return res.status(400).json({ message: 'Invalid name or password' });
+    }
+
+    const existingUser = await User.findOne({ name })
     if (existingUser) {
       return res.status(409).json({message: 'User already exists'})
     }
@@ -72,10 +111,15 @@ app.post('/signup', async (req, res) => {
   }
 })
 
-app.post('/login', async (req, res) => {
+app.post('/login', loginLimiter, async (req, res) => {
   try{
-    const { name, password } = req.body;
-    const user = await User.findOne({ name: name });
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    const password = req.body?.password;
+    if (!name || name.length > 100 || typeof password !== 'string' || !password) {
+      return res.status(400).json({ message: 'Invalid name or password' });
+    }
+
+    const user = await User.findOne({ name });
     if (!user) { return res.status(401).json({ message: 'User does not exist' }) }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) { return res.status(401).json({ message: 'Incorrect Password' }) }
@@ -87,7 +131,7 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.get('/hostCode/:username', async (req, res) => {
+app.get('/hostCode/:username', hostCodeLimiter, async (req, res) => {
   try {
     let key = generateKey();
     while (await Code.findOne({code: key})) {
@@ -104,7 +148,7 @@ app.get('/hostCode/:username', async (req, res) => {
   }
 })
 
-app.get('/checkCode/:code', async (req, res) => {
+app.get('/checkCode/:code', checkCodeLimiter, async (req, res) => {
   try {
     const code = req.params.code;
     const response = await Code.findOne({ code: code });
