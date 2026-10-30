@@ -24,7 +24,6 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
-          # Covers JavaScript, JSX, TypeScript and TSX (React)
           languages: javascript-typescript
           build-mode: none            # no build needed for JS/TS
           queries: security-extended  # broader rule set than default
