@@ -1,0 +1,42 @@
+name: CodeQL
+ 
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 3 * * 1"   # weekly scan of the default branch
+ 
+jobs:
+  analyze:
+    name: Analyze (javascript-typescript)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload results to the Security tab
+      contents: read
+      actions: read
+ 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          # Covers JavaScript, JSX, TypeScript and TSX (React)
+          languages: javascript-typescript
+          build-mode: none            # no build needed for JS/TS
+          queries: security-extended  # broader rule set than default
+          # Optional: exclude noisy paths
+           config: |
+             paths-ignore:
+               - '**/node_modules'
+               - '**/*.test.js'
+               - 'dist'
+               - 'build'
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:javascript-typescript"

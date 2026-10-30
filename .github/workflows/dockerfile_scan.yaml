@@ -1,0 +1,47 @@
+name: Dockerfile scan
+ 
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/Dockerfile*"
+      - "**/*.dockerfile"
+      - ".github/workflows/dockerfile-scan.yml"
+  pull_request:
+    paths:
+      - "**/Dockerfile*"
+      - "**/*.dockerfile"
+  schedule:
+    - cron: "0 4 * * 1"
+ 
+jobs:
+  trivy-config:
+    name: Trivy misconfiguration scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write   # upload SARIF to code scanning
+ 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+ 
+      # Scans Dockerfiles for misconfigurations: running as root,
+      # unpinned base images, ADD instead of COPY, missing HEALTHCHECK, etc.
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@master   # pin to a release tag or commit SHA for production
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-dockerfile.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: "0"   # report only; set to "1" to fail the job on findings
+ 
+      - name: Upload SARIF to GitHub
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-dockerfile.sarif
+          category: trivy-dockerfile
+ 
